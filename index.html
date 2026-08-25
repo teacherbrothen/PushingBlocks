@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newton's 3rd Law: Pushing Contact Blocks</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .quiz-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 780px;
+            padding: 28px;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .score-row {
+            display: flex;
+            justify-content: space-around;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 16px;
+        }
+        .correct { color: #2ecc71; }
+        .incorrect { color: #e74c3c; }
+        .graphic-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            background-color: #f8fafc;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+        .id-badge {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 11px;
+            color: #777;
+            font-family: monospace;
+        }
+        .diagram {
+            width: 100%;
+            max-height: 200px;
+            display: block;
+        }
+        .scenario-box {
+            background-color: #f0f4f8;
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-bottom: 16px;
+            font-size: 1.05em;
+            color: #333;
+            line-height: 1.5;
+        }
+        .instruction-banner {
+            background-color: #ffe6dc;
+            color: #e65c00;
+            text-align: center;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        .inputs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .input-group {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        .input-group label {
+            width: 55%;
+            font-size: 0.95em;
+            color: #2c3e50;
+            padding-top: 8px;
+        }
+        .input-column {
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.95em;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .btn-unit {
+            background-color: #e2e8f0;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #334155;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+        .btn-unit:hover {
+            background-color: #cbd5e1;
+        }
+        .feedback-text {
+            font-size: 0.85em;
+            font-weight: bold;
+            min-height: 1.2em;
+            text-align: center;
+            padding-right: 24px;
+        }
+        .text-correct { color: #2ecc71; }
+        .text-incorrect { color: #e74c3c; }
+        .text-syntax { color: #d35400; }
+
+        .feedback-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: transparent;
+            flex-shrink: 0;
+        }
+        .dot-correct { background-color: #2ecc71; }
+        .dot-incorrect { background-color: #e74c3c; }
+        .dot-syntax {
+            background-color: #e67e22;
+            box-shadow: 0 0 8px #e67e22;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit { background-color: #3498db; color: white; }
+        .btn-submit:hover { background-color: #2980b9; }
+        .btn-reset { background-color: #e67e22; color: white; }
+        .btn-reset:hover { background-color: #d35400; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card">
+    <h2>Newton's 3rd Law: Pushing Contact Blocks</h2>
+    
+    <div class="score-row">
+        <span class="correct">Correct: <span id="correct-count">0</span></span>
+        <span class="incorrect">Incorrect: <span id="incorrect-count">0</span></span>
+    </div>
+
+    <div class="graphic-container">
+        <span class="id-badge">ID: <span id="sim-id">---------</span></span>
+        <svg id="scenario-diagram" class="diagram" viewBox="0 0 600 180">
+            <!-- Dynamic SVG elements -->
+        </svg>
+    </div>
+
+    <div class="scenario-box" id="scenario-text">
+        Loading problem scenario...
+    </div>
+
+    <div class="instruction-banner">
+        Calculate all values to <strong>one decimal place</strong> using units (m/s² or N) and bracketed directions [Right] or [Left].
+    </div>
+
+    <div class="inputs-container">
+        <!-- Acceleration -->
+        <div class="input-group">
+            <label for="input-acc">System Acceleration (<em>a</em>):</label>
+            <div class="input-column">
+                <div class="input-wrapper">
+                    <input type="text" id="input-acc" placeholder="e.g. 4.0 m/s² [Right]">
+                    <button class="btn-unit" type="button" onclick="insertUnit('input-acc', 'm/s²')">m/s²</button>
+                    <span class="feedback-dot" id="dot-acc"></span>
+                </div>
+                <div class="feedback-text" id="msg-acc"></div>
+            </div>
+        </div>
+
+        <!-- Contact Force 1 on 2 -->
+        <div class="input-group">
+            <label for="input-f12">Force of Box ① on Box ② (<em>F</em><sub>1 on 2</sub>):</label>
+            <div class="input-column">
+                <div class="input-wrapper">
+                    <input type="text" id="input-f12" placeholder="e.g. 96.0 N [Right]">
+                    <span class="feedback-dot" id="dot-f12"></span>
+                </div>
+                <div class="feedback-text" id="msg-f12"></div>
+            </div>
+        </div>
+
+        <!-- Contact Force 2 on 1 -->
+        <div class="input-group">
+            <label for="input-f21">Force of Box ② on Box ① (<em>F</em><sub>2 on 1</sub>):</label>
+            <div class="input-column">
+                <div class="input-wrapper">
+                    <input type="text" id="input-f21" placeholder="e.g. 96.0 N [Left]">
+                    <span class="feedback-dot" id="dot-f21"></span>
+                </div>
+                <div class="feedback-text" id="msg-f21"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <button class="btn btn-submit" id="btn-submit" onclick="checkAnswers()">Submit Answer</button>
+        <button class="btn btn-reset" onclick="resetQuiz()">Restart Quiz</button>
+    </div>
+</div>
+
+<script>
+    let correctTotal = 0;
+    let incorrectTotal = 0;
+
+    let mass1 = 12, mass2 = 24, pushForce = 144;
+    let pushDirection = "Right"; 
+
+    let targetAcc = 0, targetAccDir = "Right";
+    let targetF12 = 0, targetF12Dir = "Right";
+    let targetF21 = 0, targetF21Dir = "Left";
+
+    const contactX = 300; 
+
+    function generateId() {
+        const now = new Date();
+        const yearDigit = String(now.getFullYear()).slice(-1);
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const randomDigits = String(Math.floor(1000 + Math.random() * 9000));
+        return `${yearDigit}${month}${day}${randomDigits}`;
+    }
+
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function insertUnit(inputId, unitStr) {
+        const input = document.getElementById(inputId);
+        if (input.disabled) return;
+
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+
+        const needsLeadingSpace = start > 0 && text.charAt(start - 1) !== ' ';
+        const inserted = (needsLeadingSpace ? ' ' : '') + unitStr + ' ';
+
+        input.value = text.substring(0, start) + inserted + text.substring(end);
+        input.focus();
+        input.setSelectionRange(start + inserted.length, start + inserted.length);
+    }
+
+    function resetQuiz() {
+        const submitBtn = document.getElementById("btn-submit");
+        submitBtn.innerText = "Submit Answer";
+        submitBtn.style.backgroundColor = "#3498db";
+
+        ["acc", "f12", "f21"].forEach(key => {
+            let el = document.getElementById(`input-${key}`);
+            let dot = document.getElementById(`dot-${key}`);
+            let msg = document.getElementById(`msg-${key}`);
+            
+            el.disabled = false;
+            el.value = "";
+            dot.className = "feedback-dot";
+            msg.innerText = "";
+            msg.className = "feedback-text";
+        });
+
+        generateNewProblem();
+    }
+
+    function generateNewProblem() {
+        mass1 = getRandomInt(2, 8) * 2; 
+        mass2 = getRandomInt(2, 8) * 3; 
+        pushDirection = Math.random() > 0.5 ? "Right" : "Left";
+        
+        const totalMass = mass1 + mass2;
+        const cleanAcc = (getRandomInt(15, 50) / 10);
+        pushForce = Math.round(cleanAcc * totalMass);
+
+        targetAcc = Math.round((pushForce / totalMass) * 10) / 10;
+        targetAccDir = pushDirection;
+
+        if (pushDirection === "Right") {
+            targetF12 = Math.round((mass2 * targetAcc) * 10) / 10;
+            targetF12Dir = "Right";
+            targetF21 = targetF12;
+            targetF21Dir = "Left";
+        } else {
+            targetF21 = Math.round((mass1 * targetAcc) * 10) / 10;
+            targetF21Dir = "Left";
+            targetF12 = targetF21;
+            targetF12Dir = "Right";
+        }
+
+        const scenarioText = `Two boxes, <strong>Box ① (${mass1} kg)</strong> and <strong>Box ② (${mass2} kg)</strong>, rest side-by-side on a frictionless surface. A force of <strong>${pushForce} N</strong> is applied to the <strong>${pushDirection === "Right" ? "left side of Box ① (pushing right)" : "right side of Box ② (pushing left)"}</strong>.`;
+        document.getElementById("scenario-text").innerHTML = scenarioText;
+
+        drawDiagram();
+    }
+
+	function drawDiagram() {
+	        const svg = document.getElementById("scenario-diagram");
+
+	        const baseSize = 80;
+	        const maxMass = Math.max(mass1, mass2);
+        
+	        const scale1 = 0.65 + (mass1 / maxMass) * 0.45;
+	        const scale2 = 0.65 + (mass2 / maxMass) * 0.45;
+
+	        const b1Width = Math.round(baseSize * scale1);
+	        const b1Height = Math.round(baseSize * scale1);
+	        const b2Width = Math.round(baseSize * scale2);
+	        const b2Height = Math.round(baseSize * scale2);
+
+	        const groundY = 145;
+	        const b1X = contactX - b1Width;
+	        const b2X = contactX;
+
+	        const b1Y = groundY - b1Height;
+	        const b2Y = groundY - b2Height;
+
+	        const handWidth = 110;
+	        const handHeight = 65;
+	        let handGraphic = "";
+
+	        if (pushDirection === "Right") {
+	            // Shift x rightward to press palm directly against Box 1
+	            const handX = b1X - handWidth + 20; 
+	            const handY = b1Y + (b1Height / 2) - (handHeight / 2);
+	            handGraphic = `<image href="pushing-hand.png" x="${handX}" y="${handY}" width="${handWidth}" height="${handHeight}" />`;
+	        } else {
+	            // Shift flipped x leftward to press palm directly against Box 2
+	            const handX = b2X + b2Width - 20; 
+	            const handY = b2Y + (b2Height / 2) - (handHeight / 2);
+	            handGraphic = `<g transform="translate(${handX + handWidth}, ${handY}) scale(-1, 1)">
+	                <image href="pushing-hand.png" x="0" y="0" width="${handWidth}" height="${handHeight}" />
+	            </g>`;
+	        }
+
+	        svg.innerHTML = `
+	            <line x1="30" y1="${groundY}" x2="570" y2="${groundY}" stroke="#7f8c8d" stroke-width="3"/>
+
+	            <rect x="${b1X}" y="${b1Y}" width="${b1Width}" height="${b1Height}" fill="#3498db" opacity="0.25" stroke="#2980b9" stroke-width="2" rx="4"/>
+	            <text x="${b1X + b1Width/2}" y="${b1Y + b1Height/2 - 2}" font-size="13" font-weight="bold" fill="#2c3e50" text-anchor="middle">Box ①</text>
+	            <text x="${b1X + b1Width/2}" y="${b1Y + b1Height/2 + 14}" font-size="12" font-weight="bold" fill="#555" text-anchor="middle">(${mass1} kg)</text>
+
+	            <rect x="${b2X}" y="${b2Y}" width="${b2Width}" height="${b2Height}" fill="#9b59b6" opacity="0.25" stroke="#8e44ad" stroke-width="2" rx="4"/>
+	            <text x="${b2X + b2Width/2}" y="${b2Y + b2Height/2 - 2}" font-size="13" font-weight="bold" fill="#2c3e50" text-anchor="middle">Box ②</text>
+	            <text x="${b2X + b2Width/2}" y="${b2Y + b2Height/2 + 14}" font-size="12" font-weight="bold" fill="#555" text-anchor="middle">(${mass2} kg)</text>
+
+	            ${handGraphic}
+	        `;
+	    }
+
+    function parseInput(val, expectedType) {
+        if (!val || !val.trim()) return { status: "syntax", msg: "Please enter a value!" };
+        let str = val.trim();
+
+        let numMatch = str.match(/^\d*\.?\d+/);
+        if (!numMatch) return { status: "syntax", msg: "Enter a numerical value!" };
+
+        let rawNumStr = numMatch[0];
+        if (!rawNumStr.includes(".")) return { status: "syntax", msg: "Format to 1 decimal place (e.g. 2.3)" };
+
+        if (expectedType === "acc") {
+            if (str.includes("m/s^2")) {
+                return { status: "syntax", msg: "Use the m/s² button for units!" };
+            }
+            if (!str.includes("m/s²")) {
+                return { status: "syntax", msg: "Use the m/s² button to add the unit" };
+            }
+        } else {
+            if (!/\bN\b/i.test(str)) return { status: "syntax", msg: "Include unit 'N'" };
+            if (!/\bN\b/.test(str)) return { status: "syntax", msg: "Capitalize unit 'N'" };
+        }
+
+        let dirMatch = str.match(/\[(Right|Left)\]/i);
+        if (!dirMatch) {
+            return { status: "syntax", msg: "Include direction in brackets, e.g. [Right]" };
+        }
+
+        let flexRegex = expectedType === "acc"
+            ? /^(\d+\.\d+)\s*m\/s²\s*\[(Right|Left)\]$/i
+            : /^(\d+\.\d+)\s*N\s*\[(Right|Left)\]$/i;
+
+        let match = str.match(flexRegex);
+        if (!match) return { status: "syntax", msg: "Check formatting, e.g. 2.3 m/s² [Left]" };
+
+        return { 
+            status: "ok", 
+            val: parseFloat(match[1]), 
+            dir: match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase() 
+        };
+    }
+
+    function checkAnswers() {
+        const submitBtn = document.getElementById("btn-submit");
+
+        if (submitBtn.innerText === "Next Problem") {
+            resetQuiz();
+            return;
+        }
+
+        const parsedAcc = parseInput(document.getElementById("input-acc").value, "acc");
+        const parsedF12 = parseInput(document.getElementById("input-f12").value, "force");
+        const parsedF21 = parseInput(document.getElementById("input-f21").value, "force");
+
+        let hasSyntaxError = false;
+        [
+            { parsed: parsedAcc, key: "acc" },
+            { parsed: parsedF12, key: "f12" },
+            { parsed: parsedF21, key: "f21" }
+        ].forEach(item => {
+            let dotEl = document.getElementById(`dot-${item.key}`);
+            let msgEl = document.getElementById(`msg-${item.key}`);
+            if (item.parsed.status === "syntax") {
+                dotEl.className = "feedback-dot dot-syntax";
+                msgEl.className = "feedback-text text-syntax";
+                msgEl.innerText = item.parsed.msg;
+                hasSyntaxError = true;
+            }
+        });
+
+        if (hasSyntaxError) return;
+
+        let isAccOK = (Math.abs(parsedAcc.val - targetAcc) < 0.05) && (parsedAcc.dir === targetAccDir);
+        let isF12OK = (Math.abs(parsedF12.val - targetF12) < 0.05) && (parsedF12.dir === targetF12Dir);
+        let isF21OK = (Math.abs(parsedF21.val - targetF21) < 0.05) && (parsedF21.dir === targetF21Dir);
+
+        applyFeedback("acc", isAccOK, `${targetAcc.toFixed(1)} m/s² [${targetAccDir}]`);
+        applyFeedback("f12", isF12OK, `${targetF12.toFixed(1)} N [${targetF12Dir}]`);
+        applyFeedback("f21", isF21OK, `${targetF21.toFixed(1)} N [${targetF21Dir}]`);
+
+        if (isAccOK && isF12OK && isF21OK) {
+            correctTotal++;
+            document.getElementById("correct-count").innerText = correctTotal;
+        } else {
+            incorrectTotal++;
+            document.getElementById("incorrect-count").innerText = incorrectTotal;
+        }
+
+        submitBtn.innerText = "Next Problem";
+        submitBtn.style.backgroundColor = "#2ecc71";
+    }
+
+    function applyFeedback(key, isOK, expectedStr) {
+        let dotEl = document.getElementById(`dot-${key}`);
+        let msgEl = document.getElementById(`msg-${key}`);
+
+        if (isOK) {
+            dotEl.className = "feedback-dot dot-correct";
+            msgEl.className = "feedback-text text-correct";
+            msgEl.innerText = "Correct!";
+        } else {
+            dotEl.className = "feedback-dot dot-incorrect";
+            msgEl.className = "feedback-text text-incorrect";
+            msgEl.innerText = `Expected: ${expectedStr}`;
+        }
+    }
+
+    window.onload = function() {
+        document.getElementById("sim-id").innerText = generateId();
+        generateNewProblem();
+    };
+</script>
+
+</body>
+</html>
